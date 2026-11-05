@@ -351,7 +351,19 @@ func (w *Window) Paint(c *ui.Canvas, size ui.Size) {
 	}
 	if len(w.popups) > 0 {
 		w.modalTop = len(w.scrolls)
+		// A dialog traps the focus scope, and the input router only lets a
+		// region of that scope take a press. A menu opened from the dialog's
+		// form is painted after the trap is popped, so its rows carry no scope
+		// and every click falls through to the dialog behind them. Paint the
+		// menu inside the trapped scope so its rows stay reachable.
+		scope := w.c.TrappedFocusScope()
+		if !scope.IsZero() {
+			w.c.PushFocusScope(scope)
+		}
 		w.paintPopups(full)
+		if !scope.IsZero() {
+			w.c.PopFocusScope()
+		}
 	}
 	w.paintTooltip(full)
 	if w.focusNext != (ui.ID{}) {
